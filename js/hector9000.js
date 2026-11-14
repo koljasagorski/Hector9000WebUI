@@ -35,10 +35,13 @@ const TopicClean = "Hector9000/cleanMe";
 const TopicDry = "Hector9000/dryMe";
 const TopicOpenAllValves = "Hector9000/openAllValves";
 const TopicCloseAllValves = "Hector9000/closeAllValves";
+const TopicReboot = "Hector9000/system/reboot";
+const TopicKioskExit = "Hector9000/system/kioskExit";
 
 //--------- Testing start ---------------
 
-const testing = false;
+// Open Main.html?testing to run without MQTT server (uses the test data below)
+const testing = new URLSearchParams(window.location.search).has("testing");
 
 var drinkjson = '{ "id": "123", "name": "Getränk","color": "#999999",' +
     '"description": "Ein Getränk",' +
@@ -54,6 +57,141 @@ var drinkjson = '{ "id": "123", "name": "Getränk","color": "#999999",' +
 var jsont = '{"drinks": [{"name": "Tequilla Sunrise","id": 123, "alcohol": true},{"name": "bla2","id": 123, "alcohol": false},{"name": "bla3","id": 123, "alcohol": false},{"name": "bla4","id": 123, "alcohol": false},{"name": "bla5","id": 123, "alcohol": true},{"name": "bla6","id": 123, "alcohol": true},{"name": "bla7","id": 123, "alcohol": false}]}';
 
 //--------- Testing end ---------------
+
+//--------- Congress themes ---------------
+// Colour themes from the 40C3 styleguide, defined in css/congress.css.
+
+const THEMES = [
+    {id: "dark", name: "Dark"},
+    {id: "light", name: "Light"},
+    {id: "pink", name: "Zero Day Pink"},
+    {id: "green", name: "Rabbit Green"},
+    {id: "teal", name: "Teal"},
+    {id: "autumn", name: "Autumn"},
+    {id: "yellow", name: "Danger Yellow"},
+    {id: "lilac", name: "Cute Lilac"}
+];
+const THEME_KEY = "hector9000.theme";
+var themeIndex = 0;
+
+function loadThemeIndex() {
+    try {
+        let saved = window.localStorage.getItem(THEME_KEY);
+        let idx = THEMES.findIndex(function (t) { return t.id === saved; });
+        return idx >= 0 ? idx : 0;
+    } catch (e) {
+        return 0;
+    }
+}
+
+function applyTheme(idx) {
+    themeIndex = ((idx % THEMES.length) + THEMES.length) % THEMES.length;
+    let theme = THEMES[themeIndex];
+    if (theme.id === "dark") {
+        document.documentElement.removeAttribute("data-theme");
+    } else {
+        document.documentElement.setAttribute("data-theme", theme.id);
+    }
+    let label = document.getElementById("theme-name");
+    if (label) {
+        label.innerText = theme.name;
+    }
+    try {
+        window.localStorage.setItem(THEME_KEY, theme.id);
+    } catch (e) {
+        // storage not available - theme just isn't remembered
+    }
+}
+
+function nextTheme() {
+    applyTheme(themeIndex + 1);
+    showToast(THEMES[themeIndex].name);
+}
+
+// apply as early as possible (script runs in <head>) to avoid a colour flash
+applyTheme(loadThemeIndex());
+
+//--------- Toast ---------------
+
+var toastTimer = null;
+
+function showToast(text, ms) {
+    let toast = document.getElementById("toast");
+    if (!toast) return;
+    toast.innerText = text;
+    toast.className = "show";
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () {
+        toast.className = "";
+    }, ms || 1500);
+}
+
+//--------- Reboot (two-step confirm, no browser dialogs) ---------------
+
+var rebootArmed = false;
+var rebootTimer = null;
+
+function resetReboot() {
+    rebootArmed = false;
+    clearTimeout(rebootTimer);
+    let but = document.getElementById("reboot-but");
+    if (but) {
+        but.className = "CM_button";
+        document.getElementById("reboot-label").innerText = "REBOOT";
+    }
+}
+
+function rebootTap() {
+    if (!rebootArmed) {
+        rebootArmed = true;
+        document.getElementById("reboot-but").className = "CM_button armed";
+        document.getElementById("reboot-label").innerText = "Tap again to reboot";
+        rebootTimer = setTimeout(resetReboot, 4000);
+        return;
+    }
+    resetReboot();
+    if (publish(TopicReboot, "true")) {
+        showToast("Rebooting ...", 4000);
+    } else {
+        showToast("Reboot failed: no connection", 3000);
+    }
+}
+
+function showRebooting() {
+    document.getElementById("loading-text").innerText = "Rebooting";
+    document.getElementById("loading").className = "";
+}
+
+//--------- Secret fullscreen exit ---------------
+// Tap the invisible zone in the top left corner 5 times within 3 seconds.
+// A kiosk browser cannot leave fullscreen from JS, so the backend stops it.
+
+const SECRET_TAPS = 5;
+const SECRET_WINDOW_MS = 3000;
+var secretTaps = [];
+
+function secretExitTap() {
+    let now = Date.now();
+    secretTaps = secretTaps.filter(function (t) { return now - t < SECRET_WINDOW_MS; });
+    secretTaps.push(now);
+    if (secretTaps.length < SECRET_TAPS) return;
+    secretTaps = [];
+    exitFullscreen();
+}
+
+function exitFullscreen() {
+    // normal (non-kiosk) browser fullscreen
+    if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(function () {});
+    }
+    if (publish(TopicKioskExit, "true")) {
+        showToast("Leaving fullscreen ...", 3000);
+    } else {
+        showToast("Exit failed: no connection", 3000);
+    }
+}
+
+//--------- Drink buttons ---------------
 
 function generateButton(name, id, alc) {
     shtml = '<div onclick="openDrinkModal(this)" class="button ';
@@ -114,6 +252,7 @@ started = true;
 }
 
 function startup() {
+    applyTheme(themeIndex); // fill theme label now that the DOM exists
     if (testing) {
         started = true;
         generateButtons(jsont);
@@ -234,7 +373,7 @@ console.log(DM_status);
 
 // Configmodal
 function resetCM() {
-    //Nothing to reset yet
+    resetReboot();
 }
 
 function closeConfigModal() {
@@ -408,12 +547,35 @@ function DoseStartSubscriber(payload) {
     }
 }
 
+// Returns true if the message was handed to the broker connection.
 function publish(topic, payload) {
-console.log("publish-t: " + topic);
-console.log("publish-m: " + payload);
-    message = new Paho.MQTT.Message(payload);
-    message.destinationName = topic;
-    mqtt.send(message);
+    console.log("publish-t: " + topic);
+    console.log("publish-m: " + payload);
+    if (testing || !mqtt) {
+        console.log("publish skipped: not connected");
+        return false;
+    }
+    try {
+        let message = new Paho.MQTT.Message(payload);
+        message.destinationName = topic;
+        mqtt.send(message);
+        return true;
+    } catch (e) {
+        console.log("publish failed: " + e);
+        return false;
+    }
+}
+
+function SystemReturnSubscriber(topic, payload) {
+    if (topic === TopicReboot + "/return") {
+        if (payload === "ok") {
+            showRebooting();
+        } else {
+            showToast("Reboot failed", 3000);
+        }
+    } else if (topic === TopicKioskExit + "/return" && payload !== "ok") {
+        showToast("Exit failed", 3000);
+    }
 }
 
 function DrinkProcessSubscriber(payload) {
@@ -427,7 +589,7 @@ if (DM_status === DM_State.DOSING) {
 }
 
 function messageArrived(msg) {
-publish("logging", msg.destinationName + " - " + msg.payloadString);
+    publish("logging", msg.destinationName + " - " + msg.payloadString);
 console.log("topic: " + msg.destinationName);
 console.log("payload: " + msg.payloadString);
     let topic = msg.destinationName;
@@ -439,6 +601,8 @@ console.log("payload: " + msg.payloadString);
         DoseStartSubscriber(msg.payloadString);
     } else if (topic === TopicDose + "/progress") {
         DrinkProcessSubscriber(msg.payloadString);
+    } else if (topic === TopicReboot + "/return" || topic === TopicKioskExit + "/return") {
+        SystemReturnSubscriber(topic, msg.payloadString);
     }
 }
 
@@ -447,7 +611,9 @@ function onConnect() {
     mqtt.subscribe(TopicIngredients + "/return");
     mqtt.subscribe(TopicDose + "/progress");
     mqtt.subscribe(TopicDose + "/return");
-publishatstart();
+    mqtt.subscribe(TopicReboot + "/return");
+    mqtt.subscribe(TopicKioskExit + "/return");
+    publishatstart();
 }
 
 function publishatstart(){
@@ -457,9 +623,22 @@ if(!started){
 }	
 }
 
+function connectMQTT() {
+    mqtt.connect({
+        timeout: 3,
+        onSuccess: onConnect,
+        onFailure: function () {
+            // broker not up yet (e.g. right after boot) - keep trying
+            setTimeout(connectMQTT, 3000);
+        }
+    });
+}
+
 function setUpMQTT() {
     mqtt = new Paho.MQTT.Client(host, port, "HectorFrontend");
-    var options = {timeout: 3, onSuccess: onConnect,};
     mqtt.onMessageArrived = messageArrived;
-    mqtt.connect(options);
+    mqtt.onConnectionLost = function () {
+        setTimeout(connectMQTT, 3000);
+    };
+    connectMQTT();
 }

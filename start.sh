@@ -1,1 +1,3 @@
-chromium-browser --kiosk --noerrdialogs --disable-translate --no-first-run --fast --fast-start --disable-infobars --disable-features=TranslateUI --disk-cache-dir=/dev/null Main.html
+#!/usr/bin/env bash
+# Start the WebUI fullscreen (see kiosk.sh)
+exec "$(cd "$(dirname "$0")" && pwd)/kiosk.sh" "$@"

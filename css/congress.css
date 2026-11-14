@@ -1,0 +1,719 @@
+/*
+ * Congress design for Hector9000 – based on the 40C3 "Model Citizens"
+ * styleguide (CC0): https://events.ccc.de/congress/2026/infos/styleguide/
+ * Fonts: Jersey 10 (SIL OFL 1.1), Hack (MIT) – licenses in fonts/congress/.
+ *
+ * Every colour comes from the theme tokens below. The themes follow the
+ * colour examples and dark/light interfaces from the styleguide.
+ *   --bg         page background
+ *   --fg         body text
+ *   --accent     loud boxes, borders, headings
+ *   --on-accent  text on --accent
+ *   --muted      secondary boxes
+ *   --on-muted   text on --muted
+ */
+
+@font-face {
+    font-family: "Jersey 10";
+    src: url("../fonts/congress/jersey-10-latin-400-normal.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: "Jersey 10";
+    src: url("../fonts/congress/jersey-10-latin-ext-400-normal.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    unicode-range: U+0100-02AF, U+0304, U+0308, U+0329, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+    font-family: "Hack";
+    src: url("../fonts/congress/Hack-Regular.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "Hack";
+    src: url("../fonts/congress/Hack-Bold.woff2") format("woff2");
+    font-weight: 700;
+    font-style: normal;
+}
+
+/* ---------- palette (styleguide sRGB values) ---------- */
+:root {
+    --c-0: #75B54B;
+    --c-1: #13AEA3;
+    --c-2: #999FCD;
+    --c-3: #B78FBF;
+    --c-4: #EB5D9D;
+    --c-5: #EB6F83;
+    --c-6: #F28931;
+    --c-7: #FAB93E;
+    --c-8: #7EAE83;
+    --c-9: #3B5831;
+    --c-10: #B69D93;
+    --c-11: #584744;
+    --c-A: #DFEED5;
+    --c-B: #031202;
+
+    --font-head: "Jersey 10", "Hack", monospace;
+    --font-body: "Hack", monospace;
+    --border: 4px;
+
+    /* default theme: dark interface */
+    --bg: var(--c-B);
+    --fg: var(--c-A);
+    --accent: var(--c-0);
+    --on-accent: var(--c-B);
+    --muted: var(--c-9);
+    --on-muted: var(--c-A);
+}
+
+/* ---------- themes ---------- */
+:root[data-theme="light"] {
+    --bg: var(--c-A);
+    --fg: var(--c-B);
+    --accent: var(--c-0);
+    --on-accent: var(--c-B);
+    --muted: var(--c-9);
+    --on-muted: var(--c-A);
+}
+
+:root[data-theme="pink"] {
+    --bg: var(--c-4);
+    --fg: var(--c-A);
+    --accent: var(--c-A);
+    --on-accent: var(--c-4);
+    --muted: var(--c-0);
+    --on-muted: var(--c-B);
+}
+
+:root[data-theme="green"] {
+    --bg: var(--c-0);
+    --fg: var(--c-B);
+    --accent: var(--c-B);
+    --on-accent: var(--c-0);
+    --muted: var(--c-9);
+    --on-muted: var(--c-A);
+}
+
+:root[data-theme="teal"] {
+    --bg: var(--c-A);
+    --fg: var(--c-B);
+    --accent: var(--c-1);
+    --on-accent: var(--c-B);
+    --muted: var(--c-B);
+    --on-muted: var(--c-1);
+}
+
+:root[data-theme="autumn"] {
+    --bg: var(--c-11);
+    --fg: var(--c-6);
+    --accent: var(--c-6);
+    --on-accent: var(--c-11);
+    --muted: var(--c-10);
+    --on-muted: var(--c-11);
+}
+
+:root[data-theme="yellow"] {
+    --bg: var(--c-7);
+    --fg: var(--c-B);
+    --accent: var(--c-B);
+    --on-accent: var(--c-7);
+    --muted: var(--c-6);
+    --on-muted: var(--c-B);
+}
+
+:root[data-theme="lilac"] {
+    --bg: var(--c-2);
+    --fg: var(--c-B);
+    --accent: var(--c-A);
+    --on-accent: var(--c-B);
+    --muted: var(--c-3);
+    --on-muted: var(--c-B);
+}
+
+/* ---------- base ---------- */
+html, body {
+    background-color: var(--bg);
+    color: var(--fg);
+    transition: background-color 400ms, color 400ms;
+}
+
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-family: var(--font-body);
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+h1, #h9, .name, .DM_button, .CM_button, #DM_name, #loading-text, #toast {
+    font-family: var(--font-head);
+    font-weight: 400;
+    letter-spacing: 0.025em;
+}
+
+/* ---------- helpers used by the JS state machine ---------- */
+.inv {
+    visibility: collapse !important;
+    display: none !important;
+}
+
+.dis {
+    opacity: 1;
+}
+
+.MC_cls {
+    display: none;
+}
+
+/* ---------- header ---------- */
+#content {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+#header {
+    width: 100%;
+    height: 15%;
+    display: flex;
+    align-items: center;
+    margin-top: 2%;
+    padding-top: 0;
+}
+
+#title {
+    margin: auto;
+    display: flex;
+    align-items: center;
+    gap: 2vh;
+}
+
+#logo {
+    height: 11vh;
+    width: auto;
+    fill: var(--accent);
+}
+
+#h9 {
+    font-size: 11vh;
+    line-height: 1;
+    color: var(--accent);
+    text-transform: uppercase;
+}
+
+#header-buttons {
+    position: fixed;
+    top: 3vh;
+    right: 2vw;
+    display: flex;
+    gap: 1.5vw;
+    z-index: 95;
+}
+
+.icon-but {
+    width: 9vh;
+    height: 9vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: var(--border) solid var(--accent);
+    color: var(--accent);
+    font-size: 5vh;
+    box-sizing: border-box;
+}
+
+.icon-but:active {
+    background-color: var(--accent);
+    color: var(--on-accent);
+}
+
+/* ---------- drink pages ---------- */
+.buttons {
+    width: 80%;
+    height: 90%;
+    overflow-y: hidden;
+    position: fixed;
+    top: 15%;
+    right: 10%;
+    display: flex;
+    flex-direction: column;
+    transition-property: right;
+    transition-delay: 0ms;
+    transition-duration: 1s;
+    z-index: 10;
+}
+
+.row {
+    height: 40%;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    position: relative;
+}
+
+.r1 {
+    margin-top: 3%;
+    margin-bottom: 3%;
+}
+
+/* non-alcoholic: quiet (outlined) box */
+.button {
+    width: 28%;
+    height: 90%;
+    margin-right: auto;
+    margin-left: auto;
+    display: flex;
+    position: relative;
+    box-sizing: border-box;
+    border: var(--border) solid var(--accent);
+    background-color: transparent;
+    color: var(--fg);
+}
+
+/* alcoholic: loud (filled) box plus label */
+.alc {
+    background-color: var(--accent) !important;
+    color: var(--on-accent) !important;
+}
+
+.alc::after {
+    content: "ALC";
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 0.4vh 1vh;
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 2.6vh;
+    background-color: var(--on-accent);
+    color: var(--accent);
+}
+
+.button:active {
+    background-color: var(--muted) !important;
+    color: var(--on-muted) !important;
+    border-color: var(--muted);
+}
+
+.name {
+    margin: auto;
+    padding: 0 1vh;
+    text-align: center;
+    width: 100%;
+    color: inherit;
+    font-size: 7vh;
+    line-height: 1;
+    overflow-wrap: anywhere;
+}
+
+/* ---------- side arrows ---------- */
+.side {
+    width: 10%;
+    height: 85%;
+    position: fixed;
+    top: 15%;
+    display: flex;
+    z-index: 90;
+    background-color: var(--bg);
+    transition: background-color 400ms;
+}
+
+#right-side {
+    right: 0;
+}
+
+#left-side {
+    left: 0;
+}
+
+#right-but, #left-but {
+    margin: auto;
+}
+
+.side-but {
+    color: var(--accent);
+    padding: 0 0.5vw;
+}
+
+.side-but:active {
+    background-color: var(--accent);
+    color: var(--on-accent);
+}
+
+.fas-s {
+    font-size: 20vh !important;
+}
+
+/* ---------- modal ---------- */
+.modal {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: fixed;
+    top: 55%;
+    left: 50%;
+    z-index: 100;
+    background-color: var(--bg);
+    color: var(--fg);
+    border: var(--border) solid var(--accent);
+    box-sizing: border-box;
+    transition: width 1s, height 1s, top 1s, left 1s;
+}
+
+.open {
+    width: 80% !important;
+    height: 80% !important;
+    visibility: visible !important;
+    top: 15% !important;
+    left: 10% !important;
+    opacity: 1 !important;
+}
+
+.trans {
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+#modalclose {
+    opacity: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    padding: 0;
+    margin: 0;
+    height: 100vh;
+    width: 100vw;
+    z-index: 99;
+}
+
+/* drink modal */
+#mod-drink {
+    height: 100%;
+}
+
+#DM_description {
+    height: 60%;
+    margin-top: 3%;
+    width: 90%;
+    margin-left: 5%;
+}
+
+#DM_name {
+    text-align: center;
+    width: 100%;
+    font-size: 7vh;
+    margin-bottom: 3%;
+    color: var(--accent);
+}
+
+#DM_name u {
+    text-decoration: none;
+}
+
+#DM_List {
+    display: flex;
+    flex-direction: column;
+    font-size: 4vh;
+    width: 80%;
+    margin-left: 10%;
+    height: 80%;
+}
+
+#DM_ing_loader {
+    margin: auto;
+}
+
+.DM_ing {
+    display: flex;
+    flex-direction: row;
+    margin-bottom: 0.8vh;
+    padding-left: 1.5vh;
+    border-left: 1vh solid var(--accent);
+}
+
+.DM_ing_amm {
+    width: 22%;
+    font-weight: 700;
+}
+
+.DM_ing_name {
+    text-align: left;
+}
+
+#DM_buttons {
+    height: 25%;
+    width: 90%;
+    margin-top: 2%;
+    margin-left: 5%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4%;
+    transition: opacity 500ms;
+}
+
+.DM_button {
+    padding: 2vh 3vh;
+    margin: auto;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    font-size: 6vh;
+    text-align: center;
+    box-sizing: border-box;
+    border: var(--border) solid var(--accent);
+    transition: opacity 500ms;
+}
+
+.DM_button > i {
+    margin-right: 2vh;
+}
+
+/* cancel: quiet */
+#DM_abbruch {
+    background-color: transparent;
+    color: var(--accent);
+}
+
+/* prepare: loud */
+#DM_zubereiten {
+    width: 45%;
+    background-color: var(--accent);
+    color: var(--on-accent);
+    justify-content: center;
+}
+
+#DM_zubereiten_inner {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.DM_button:active {
+    background-color: var(--muted) !important;
+    color: var(--on-muted) !important;
+}
+
+.loader_active {
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
+}
+
+#DM_dose_bar {
+    height: 50px;
+    width: 90%;
+    margin-left: 5%;
+    margin-top: auto;
+    margin-bottom: auto;
+    transition: opacity 500ms;
+}
+
+#outter_bar {
+    height: 7vh;
+    width: 100%;
+    box-sizing: border-box;
+    border: var(--border) solid var(--accent);
+}
+
+#inner_bar {
+    transition: width 500ms;
+    height: 100%;
+    width: 0;
+    background-color: var(--accent);
+    color: var(--on-accent);
+    display: flex;
+    font-family: var(--font-head);
+    font-size: 4.5vh;
+}
+
+#inner_bar > div {
+    margin: auto;
+}
+
+/* config modal */
+#mod-config {
+    display: flex;
+    height: 100%;
+    width: 100%;
+}
+
+#CM_content {
+    margin: 0 auto;
+    height: 94%;
+    width: 92%;
+    display: flex;
+    flex-direction: column;
+}
+
+#CM_content > h1 {
+    margin: 2vh 0;
+    font-size: 7vh;
+    line-height: 1;
+    color: var(--accent);
+    text-align: left;
+    text-transform: uppercase;
+}
+
+#CM_grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-auto-rows: 1fr;
+    gap: 1.6vh 2vh;
+}
+
+.CM_button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    box-sizing: border-box;
+    border: var(--border) solid var(--accent);
+    background-color: transparent;
+    color: var(--accent);
+    font-size: 5.5vh;
+    line-height: 1;
+}
+
+.CM_button > div {
+    margin: auto;
+}
+
+.CM_button.loud {
+    background-color: var(--accent);
+    color: var(--on-accent);
+}
+
+.CM_button.armed {
+    background-color: var(--muted);
+    color: var(--on-muted);
+    border-color: var(--muted);
+}
+
+.CM_button:active {
+    background-color: var(--muted);
+    color: var(--on-muted);
+}
+
+/* ---------- loading screen ---------- */
+#loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1000;
+    display: flex;
+    flex-direction: row;
+    background-color: var(--bg);
+}
+
+#loading > div {
+    font-size: 4vh;
+    text-align: center;
+    margin: auto;
+}
+
+#loading-logo {
+    height: 28vh;
+    width: auto;
+    fill: var(--accent);
+    margin-bottom: 3vh;
+}
+
+#loading-text {
+    font-size: 8vh;
+    color: var(--accent);
+    margin-bottom: 2vh;
+    text-transform: uppercase;
+}
+
+/* ---------- toast ---------- */
+#toast {
+    position: fixed;
+    left: 50%;
+    bottom: 4vh;
+    transform: translateX(-50%);
+    z-index: 3000;
+    padding: 1.2vh 3vh;
+    font-size: 5vh;
+    background-color: var(--accent);
+    color: var(--on-accent);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 300ms;
+    white-space: nowrap;
+}
+
+#toast.show {
+    opacity: 1;
+}
+
+/* ---------- secret fullscreen exit: invisible tap zone ---------- */
+#secret-exit {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 9vh;
+    height: 9vh;
+    z-index: 2000; /* above the loading screen, so it also works while stuck there */
+    background: transparent;
+}
+
+/* ---------- spinner ---------- */
+.lds-roller {
+    display: inline-block;
+    position: relative;
+    width: 64px;
+    height: 64px;
+    padding: 0;
+}
+
+.lds-roller div {
+    animation: lds-roller 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+    transform-origin: 32px 32px;
+}
+
+.lds-roller div:after {
+    content: " ";
+    display: block;
+    position: absolute;
+    width: 7px;
+    height: 7px;
+    background: var(--accent);
+    margin: -3px 0 0 -3px;
+}
+
+.lds-roller div:nth-child(1) { animation-delay: -0.036s; }
+.lds-roller div:nth-child(1):after { top: 50px; left: 50px; }
+.lds-roller div:nth-child(2) { animation-delay: -0.072s; }
+.lds-roller div:nth-child(2):after { top: 54px; left: 45px; }
+.lds-roller div:nth-child(3) { animation-delay: -0.108s; }
+.lds-roller div:nth-child(3):after { top: 57px; left: 39px; }
+.lds-roller div:nth-child(4) { animation-delay: -0.144s; }
+.lds-roller div:nth-child(4):after { top: 58px; left: 32px; }
+.lds-roller div:nth-child(5) { animation-delay: -0.18s; }
+.lds-roller div:nth-child(5):after { top: 57px; left: 25px; }
+.lds-roller div:nth-child(6) { animation-delay: -0.216s; }
+.lds-roller div:nth-child(6):after { top: 54px; left: 19px; }
+.lds-roller div:nth-child(7) { animation-delay: -0.252s; }
+.lds-roller div:nth-child(7):after { top: 50px; left: 14px; }
+.lds-roller div:nth-child(8) { animation-delay: -0.288s; }
+.lds-roller div:nth-child(8):after { top: 45px; left: 10px; }
+
+@keyframes lds-roller {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

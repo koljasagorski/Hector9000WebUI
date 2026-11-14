@@ -1,20 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Hector9000</title>
     <script src="js/mqtt.js"></script>
     <script src="js/hector9000.js"></script>
     <link href="css/fontawesome/fontawesome.css" rel="stylesheet" type="text/css"/>
-    <link href="css/hector9000.css" rel="stylesheet" type="text/css">
+    <link href="css/congress.css" rel="stylesheet" type="text/css">
 </head>
 
 <body onload="startup()">
 
+<!-- 40C3 logo (CC0, styleguide asset 40C3_Logo), coloured via CSS fill -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="logo-40c3" viewBox="0 0 67.7 88.4"><path d="M52,18.2l6.3-6.3-3.2-3.2-7.2,7.2q-5.9-3.5-11.8-6.9V0h-4.5v9q-5.9,3.5-11.8,6.9l-7.2-7.2-3.3,3.2,6.4,6.4Q7.8,22.8,0,27.4q16.9,9.8,33.8,19.6,16.9-9.8,33.8-19.6-7.8-4.6-15.6-9.2h0ZM33.8,37.5c-5.6,0-10.1-4.5-10.1-10.1s4.5-10.2,10.1-10.2,10.2,4.6,10.2,10.2S39.4,37.5,33.8,37.5Z"/><path d="M31.1,51.8l-14.6-8.5v36.7l14.6,8.4S31.1,51.8,31.1,51.8ZM26.9,68.3v9.2c-1.1-.5-2.2-1.1-3.3-1.7-1.2-.6-2.3-1.2-3.3-1.9v-17.5c1.1.6,2.2,1.2,3.3,1.8,1.1.6,2.2,1.2,3.3,1.8v8.3h0Z"/><path d="M53.1,47.2v6.4c1.7-1.2,3.5-2.5,5.4-3.8q2.7-2.1,5.2-4.1c0,2.3,0,3.4,0,5.7q-4.4,2.7-8.7,5.4c0,2.4,0,4.8.1,7.1,2.9-1.8,5.8-3.5,8.7-5.3,0,2.3,0,3.4.1,5.6q-2.1.9-4.3,1.8c-2.2.9-4.4,1.8-6.6,2.7v10l14.6-8.5c0-12.2,0-24.4,0-36.6l-14.5,8.4v5.2h0Z"/><path d="M12.6,53.6c-.8.3-1.7.6-2.6.9-.8.3-1.7.6-2.5.8,0,1.8-.1,3.7-.2,5.5-1.8-1-2.7-1.5-4.5-2.6q1.7-6.3,3.5-12.7,1-3.4,2-6.9L0,33.8v33c1.4.8,2.8,1.5,4.1,2.3.9.5,1.9,1,2.8,1.5-.1,1.5-.2,2.5-.2,3.7l5.9,3.5v-24.2h0Z"/><path d="M40.5,77.6q0-9.2,0-18.3c3-1.4,5.9-2.8,8.8-4.2v-11l-13.1,7.6v36.7l13.1-7.6v-10.8c-2.9,2.6-5.8,5.1-8.8,7.6h0Z"/></symbol>
+</svg>
+
+<!-- Secret fullscreen exit: tap 5x within 3 s in the top left corner -->
+<div id="secret-exit" onclick="secretExitTap()"></div>
+
+<div id="toast"></div>
+
 <div id="loading">
     <div>
-        <div style="margin-bottom: 2vh">Loading Drinks</div>
+        <svg id="loading-logo" viewBox="0 0 67.7 88.4" aria-hidden="true"><use href="#logo-40c3"/></svg>
+        <div id="loading-text">Loading Drinks</div>
         <div>
             <div class="lds-roller">
                 <div></div>
@@ -34,11 +46,18 @@
 <div id="content">
     <div id="header">
         <div id="title">
+            <svg id="logo" viewBox="0 0 67.7 88.4" aria-hidden="true"><use href="#logo-40c3"/></svg>
             <span id="h9">Hector 9000</span>
         </div>
-        <!-- OpenConfig Modal -->
-        <div id="config-but" onclick="openConfigModal()">
-            <i class="fas fa-cog"></i>
+        <div id="header-buttons">
+            <!-- Switch congress colour theme -->
+            <div class="icon-but" id="theme-but" onclick="nextTheme()" title="Farbschema wechseln">
+                <i class="fas fa-palette"></i>
+            </div>
+            <!-- OpenConfig Modal -->
+            <div class="icon-but" id="config-but" onclick="openConfigModal()" title="Einstellungen">
+                <i class="fas fa-cog"></i>
+            </div>
         </div>
     </div>
     <!-- Move the main-panel -->
@@ -85,12 +104,11 @@
                     </div>
                 </div>
                 <div class="DM_button" id="DM_abbruch" onclick="closeDrinkModal()"><i
-                        class="far fa-times-circle"></i><span style="padding-right: 10px;">Abbruch</span></div>
+                        class="far fa-times-circle"></i><span>Abbruch</span></div>
                 <div class="DM_button" id="DM_zubereiten" onclick="">
                     <div id="DM_zubereiten_inner">
-                        <i class="fas fa-cocktail" style="margin-top: auto; margin-bottom: auto;"></i>
-                        <span
-                                style="margin-top: auto; margin-bottom: auto; padding-right: 10px; padding-left: 10px;">Zubereiten</span>
+                        <i class="fas fa-cocktail"></i>
+                        <span style="padding-left: 2vh;">Zubereiten</span>
                     </div>
                     <div class="inv" id="DM_zubereiten_loading">
                         <div class="lds-roller">
@@ -110,27 +128,29 @@
         <div class="inv" id="mod-config">
             <div id="CM_content">
                 <h1>Configuration</h1>
-                <div id="CM_buttons">
+                <div id="CM_grid">
                     <div class="CM_button" onclick="publish(TopicDry, 'true')">
                         <div>DRY</div>
                     </div>
                     <div class="CM_button" onclick="publish(TopicClean, 'true')">
                         <div>CLEAN</div>
                     </div>
-                </div>
-                <div id="CM_buttons2">
                     <div class="CM_button" onclick="publish(TopicCloseAllValves, 'true')">
                         <div>Close all valves</div>
                     </div>
                     <div class="CM_button" onclick="publish(TopicOpenAllValves, 'true')">
                         <div>Open all valves</div>
                     </div>
-                </div>
-                <div id="CM_buttons3">
+                    <div class="CM_button" onclick="nextTheme()">
+                        <div>Color: <span id="theme-name">Dark</span></div>
+                    </div>
                     <div class="CM_button" onclick="location.reload()">
                         <div>RELOAD</div>
                     </div>
-                    <div class="CM_button" onclick="closeConfigModal()">
+                    <div class="CM_button" id="reboot-but" onclick="rebootTap()">
+                        <div id="reboot-label">REBOOT</div>
+                    </div>
+                    <div class="CM_button loud" onclick="closeConfigModal()">
                         <div>Close</div>
                     </div>
                 </div>
