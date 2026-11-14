@@ -160,6 +160,12 @@ function rebootTap() {
 function showRebooting() {
     document.getElementById("loading-text").innerText = "Rebooting";
     document.getElementById("loading").className = "";
+    // If the Pi is still up after 90 s the reboot did not happen - give the UI back.
+    setTimeout(function () {
+        document.getElementById("loading").className = "inv";
+        document.getElementById("loading-text").innerText = "Loading Drinks";
+        showToast("Reboot did not happen", 4000);
+    }, 90000);
 }
 
 //--------- Secret fullscreen exit ---------------
@@ -635,7 +641,8 @@ function connectMQTT() {
 }
 
 function setUpMQTT() {
-    mqtt = new Paho.MQTT.Client(host, port, "HectorFrontend");
+    // unique id: two UIs with the same id would keep kicking each other off the broker
+    mqtt = new Paho.MQTT.Client(host, port, "HectorFrontend-" + Math.random().toString(16).slice(2, 10));
     mqtt.onMessageArrived = messageArrived;
     mqtt.onConnectionLost = function () {
         setTimeout(connectMQTT, 3000);

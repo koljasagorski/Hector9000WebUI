@@ -48,7 +48,21 @@ if [ -z "$BROWSER" ]; then
     exit 1
 fi
 
+# --- single instance (a second autostart would otherwise fight the first) --
+LOCK="/tmp/hector9000-kiosk-$(id -u).lock"
+if command -v flock >/dev/null 2>&1; then
+    exec 9>"$LOCK"
+    if ! flock -n 9; then
+        log "kiosk already running, exiting"
+        exit 0
+    fi
+fi
+
 rm -f "$EXIT_FLAG"
+if [ -e "$EXIT_FLAG" ]; then
+    log "cannot remove $EXIT_FLAG (owned by another user?) - remove it and start again"
+    exit 1
+fi
 
 # --- wait until Hector is initialised (broker websocket reachable) ---------
 log "waiting for MQTT websocket ${MQTT_HOST}:${MQTT_WS_PORT} (max ${WAIT_TIMEOUT}s)"
