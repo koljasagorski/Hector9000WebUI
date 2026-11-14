@@ -7,7 +7,8 @@
 # 3. stops for good once the "leave fullscreen" flag exists.
 #
 # Contract with Hector9000 (HectorSystem.py, topic Hector9000/system/kioskExit):
-#   flag file   /tmp/hector9000-kiosk.exit
+#   flag file   /tmp/hector9000-kiosk/exit  (the directory belongs to the kiosk
+#               user, so the flag can be removed even if root created it)
 #   marker      every kiosk Chromium runs with a profile dir containing
 #               "hector9000-kiosk-profile", so `pkill -f` only hits the kiosk.
 #
@@ -22,7 +23,8 @@ set -u
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PAGE="file://${DIR}/Main.html"
-EXIT_FLAG="/tmp/hector9000-kiosk.exit"
+EXIT_DIR="/tmp/hector9000-kiosk"
+EXIT_FLAG="${EXIT_DIR}/exit"
 PROFILE_DIR="${HOME}/.cache/hector9000-kiosk-profile"
 MQTT_HOST="${HECTOR_MQTT_HOST:-localhost}"
 MQTT_WS_PORT="${HECTOR_MQTT_WS_PORT:-9001}"
@@ -31,6 +33,7 @@ WAIT_TIMEOUT="${HECTOR_WAIT_TIMEOUT:-120}"
 log() { echo "[hector9000-kiosk] $*"; }
 
 if [ "${1:-}" = "--exit" ]; then
+    mkdir -p "$EXIT_DIR"
     touch "$EXIT_FLAG"
     pkill -f "hector9000-kiosk-[p]rofile"
     exit 0
@@ -58,9 +61,10 @@ if command -v flock >/dev/null 2>&1; then
     fi
 fi
 
+mkdir -p "$EXIT_DIR"
 rm -f "$EXIT_FLAG"
 if [ -e "$EXIT_FLAG" ]; then
-    log "cannot remove $EXIT_FLAG (owned by another user?) - remove it and start again"
+    log "cannot remove $EXIT_FLAG ($EXIT_DIR owned by another user?) - remove it and start again"
     exit 1
 fi
 

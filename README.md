@@ -47,7 +47,7 @@ with system actions.
 
 Tap the invisible area in the **top left corner 5 times within 3 seconds**
 (also works on the loading screen). This sends `Hector9000/system/kioskExit`;
-the backend creates `/tmp/hector9000-kiosk.exit` and stops the kiosk Chromium
+the backend creates `/tmp/hector9000-kiosk/exit` and stops the kiosk Chromium
 (processes with `hector9000-kiosk-profile` in the command line), and `kiosk.sh`
 does not restart it. Without the backend: `./kiosk.sh --exit`.
 Needs a working MQTT connection; otherwise the UI shows "Exit failed: no connection".
