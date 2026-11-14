@@ -20,6 +20,13 @@ bundled in `fonts/congress/` together with their licenses. All styling is in
 - **Drinks:** alcoholic drinks are filled boxes with an `ALC` label,
   non-alcoholic drinks are outlined boxes.
 
+#### LED strip
+
+"LED: …" in the settings switches the ambient LED mode (Theme, Random, Idle, Off).
+The UI publishes the selected theme and LED mode (retained), touches (to end the
+idle animation) and the selected drink; the LED server of the Hector9000 backend
+does the rest (dosing progress, finish, cleaning).
+
 #### Fullscreen on boot
 
     ./install.sh        # as the desktop user, not root

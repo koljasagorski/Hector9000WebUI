@@ -37,6 +37,7 @@ const TopicOpenAllValves = "Hector9000/openAllValves";
 const TopicCloseAllValves = "Hector9000/closeAllValves";
 const TopicReboot = "Hector9000/system/reboot";
 const TopicKioskExit = "Hector9000/system/kioskExit";
+const TopicLED = "Hector9000/LEDStrip/";
 
 //--------- Testing start ---------------
 
@@ -101,6 +102,7 @@ function applyTheme(idx) {
     } catch (e) {
         // storage not available - theme just isn't remembered
     }
+    publish(TopicLED + "theme", theme.id, true);
 }
 
 function nextTheme() {
@@ -110,6 +112,68 @@ function nextTheme() {
 
 // apply as early as possible (script runs in <head>) to avoid a colour flash
 applyTheme(loadThemeIndex());
+
+//--------- LED strip ---------------
+// Ambient LED mode; events (dosing, finish, cleaning) are handled by the LED server.
+
+const LED_MODES = [
+    {id: "theme", name: "Theme"},
+    {id: "random", name: "Random"},
+    {id: "idle", name: "Idle"},
+    {id: "off", name: "Off"}
+];
+const LED_KEY = "hector9000.ledmode";
+var ledIndex = 0;
+
+function loadLedIndex() {
+    try {
+        let saved = window.localStorage.getItem(LED_KEY);
+        let idx = LED_MODES.findIndex(function (m) { return m.id === saved; });
+        return idx >= 0 ? idx : 0;
+    } catch (e) {
+        return 0;
+    }
+}
+
+function applyLedMode(idx) {
+    ledIndex = ((idx % LED_MODES.length) + LED_MODES.length) % LED_MODES.length;
+    let label = document.getElementById("led-name");
+    if (label) {
+        label.innerText = LED_MODES[ledIndex].name;
+    }
+    try {
+        window.localStorage.setItem(LED_KEY, LED_MODES[ledIndex].id);
+    } catch (e) {
+        // not remembered
+    }
+    publish(TopicLED + "ambient", LED_MODES[ledIndex].id, true);
+}
+
+function nextLedMode() {
+    applyLedMode(ledIndex + 1);
+    showToast("LED: " + LED_MODES[ledIndex].name);
+}
+
+// tell the LED server someone is using Hector (ends the idle animation)
+var lastActivitySent = 0;
+
+function sendActivity() {
+    let now = Date.now();
+    if (now - lastActivitySent > 10000) {
+        lastActivitySent = now;
+        publish(TopicLED + "activity", "1");
+    }
+}
+
+document.addEventListener("pointerdown", sendActivity, true);
+
+// publish the current state again after (re)connecting
+function publishLedState() {
+    publish(TopicLED + "theme", THEMES[themeIndex].id, true);
+    publish(TopicLED + "ambient", LED_MODES[ledIndex].id, true);
+}
+
+ledIndex = loadLedIndex();
 
 //--------- Toast ---------------
 
@@ -259,6 +323,7 @@ started = true;
 
 function startup() {
     applyTheme(themeIndex); // fill theme label now that the DOM exists
+    applyLedMode(ledIndex);
     if (testing) {
         started = true;
         generateButtons(jsont);
@@ -320,6 +385,10 @@ function resetDM() {
 function closeDrinkModal() {
     if (DM_status === DM_State.RUNNING || DM_status === DM_State.LOADING) {
         DM_status = DM_State.CLOSING;
+        if (!dosingFinished) {
+            publish(TopicLED + "deselect", "1");  // keep the finish animation running
+        }
+        dosingFinished = false;
         closeModal();
         setTimeout(function () {
             document.getElementById("DM_ing_loader").className = "";
@@ -343,6 +412,7 @@ function openDrinkModal(drinkinfo) {
         d_name += "</u>";
         document.getElementById("DM_name").innerHTML = d_name;
         document.getElementById("mod-drink").setAttribute("d_id", drinkinfo.getAttribute("d_id"));
+        publish(TopicLED + "select", drinkinfo.getAttribute("d_id"));
         if (testing) {
             DM_status = DM_State.LOADING;
             setTimeout(showIngredientsAndButton(drinkjson), 800);
@@ -467,8 +537,11 @@ function updateDosingState(update) {
     }
 }
 
+var dosingFinished = false;
+
 function doseEnded() {
     if (DM_status === DM_State.DOSING) {
+        dosingFinished = true;
         DM_status = DM_State.RUNNING;
         MM_status = MM_State.RUNNING;
         closeDrinkModal();
@@ -554,7 +627,8 @@ function DoseStartSubscriber(payload) {
 }
 
 // Returns true if the message was handed to the broker connection.
-function publish(topic, payload) {
+// retained: the broker keeps the last value for clients that connect later.
+function publish(topic, payload, retained) {
     console.log("publish-t: " + topic);
     console.log("publish-m: " + payload);
     if (testing || !mqtt) {
@@ -564,6 +638,9 @@ function publish(topic, payload) {
     try {
         let message = new Paho.MQTT.Message(payload);
         message.destinationName = topic;
+        if (retained) {
+            message.retained = true;
+        }
         mqtt.send(message);
         return true;
     } catch (e) {
@@ -619,6 +696,7 @@ function onConnect() {
     mqtt.subscribe(TopicDose + "/return");
     mqtt.subscribe(TopicReboot + "/return");
     mqtt.subscribe(TopicKioskExit + "/return");
+    publishLedState();
     publishatstart();
 }
 
