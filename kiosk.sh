@@ -109,7 +109,7 @@ while [ ! -e "$EXIT_FLAG" ]; do
         --password-store=basic \
         --ozone-platform-hint=auto \
         ${HECTOR_KIOSK_FLAGS:-} \
-        "$PAGE"
+        "$PAGE" 9>&-   # browser must not inherit the instance lock
 
     [ -e "$EXIT_FLAG" ] && break
     log "browser ended unexpectedly, restarting in 3s"
