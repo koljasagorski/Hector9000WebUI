@@ -1,0 +1,40 @@
+name: CI
+
+# Checks that need no Raspberry Pi and no browser: syntax of the page scripts and the kiosk
+# scripts, and that the Doom easter egg is complete (a fresh clone must contain 15 files under doom/).
+
+on:
+  push:
+    branches: [master, "feature/**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: JavaScript syntax
+        run: |
+          for f in js/*.js; do node --check "$f" && echo "ok  $f"; done
+      - name: Shell scripts (bash -n, ShellCheck)
+        run: |
+          for f in kiosk.sh install.sh start.sh; do bash -n "$f" && echo "ok  $f"; done
+          shellcheck -S warning kiosk.sh install.sh start.sh
+      - name: Doom files are all in the repository
+        run: |
+          n=$(git ls-files doom | wc -l)
+          echo "files under doom/: $n"
+          test "$n" -ge 15
+          test -s doom/index.html
+      - name: The page and its scripts exist
+        run: |
+          test -s Main.html
+          grep -q 'js/hector9000.js' Main.html
