@@ -80,6 +80,13 @@ class Quiet(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *args):
         pass
 
+    def end_headers(self):
+        # The kiosk profile survives reboots. Without this, Chromium may keep serving an
+        # old hector9000.js for a while after an update; "no-cache" = ask again every time
+        # (an unchanged file costs a 304, so the 29 MB Doom data is not downloaded again).
+        self.send_header("Cache-Control", "no-cache")
+        super().end_headers()
+
 
 server = http.server.ThreadingHTTPServer(("127.0.0.1", port), functools.partial(Quiet, directory=directory))
 open(ready, "w").close()
