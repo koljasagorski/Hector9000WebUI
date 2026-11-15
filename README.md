@@ -31,8 +31,8 @@ does the rest (dosing progress, finish, cleaning).
 
 Picking the cocktail **Doom** starts Doom (Chocolate Doom as WebAssembly, free Freedoom
 levels) on the touch screen; see [`doom/README.md`](doom/README.md) for controls, ways out,
-licences (GPL-2.0 engine, BSD Freedoom data) and how the engine was built. The kiosk
-Chromium needs `--allow-file-access-from-files` (set by `kiosk.sh`).
+licences (GPL-2.0 engine, BSD Freedoom data) and how the engine was built. `kiosk.sh`
+serves the UI over `http://127.0.0.1`, so Chromium needs no special flag.
 
 #### Fullscreen on boot
 
@@ -47,9 +47,17 @@ unit is removed by `install.sh`.
 
 Start manually: `./kiosk.sh &` (or `./start.sh`).
 Overrides: `HECTOR_MQTT_HOST`, `HECTOR_MQTT_WS_PORT`, `HECTOR_WAIT_TIMEOUT`,
-`HECTOR_KIOSK_FLAGS` (e.g. `--disable-gpu`). The Chromium flags include
-`--allow-file-access-from-files` (the UI runs from `file://` and the Doom page loads its
-files from there).
+`HECTOR_UI_PORT` (8765), `HECTOR_KIOSK_FLAGS` (e.g. `--disable-gpu`).
+
+`kiosk.sh` starts a tiny local web server (Python `http.server`, bound to `127.0.0.1` only,
+stopped together with the kiosk; if the port is taken it tries the next ten) and opens the UI
+from there. That keeps Chromium's `file://` protections switched on, which is why
+`--allow-file-access-from-files` is **not** used any more. Only if no server can be started
+(no `python3`, all ports busy) `kiosk.sh` falls back to `file://` plus that flag and logs a
+warning. Moving from `file://` to `http://127.0.0.1:<port>` resets the settings the UI keeps
+in `localStorage` (colour theme, LED mode) once; they are stored per origin.
+
+Drink and ingredient names from the backend are HTML-escaped before they are shown.
 
 #### Settings: reboot
 

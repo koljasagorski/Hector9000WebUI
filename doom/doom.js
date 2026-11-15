@@ -9,8 +9,9 @@
 //   activity  somebody touched a button (keeps the LED strip awake)
 //   exit      leave Doom, with reason and played seconds
 //
-// Loading uses plain XHR instead of Emscripten's own loader on purpose: the kiosk opens
-// the UI from file:// (Chromium flag --allow-file-access-from-files), and Emscripten 3.1.64
+// Loading uses plain XHR instead of Emscripten's own loader on purpose: the UI can
+// be opened from file:// (a hand-opened Main.html, or the file:// fallback of kiosk.sh with the
+// Chromium flag --allow-file-access-from-files), and Emscripten 3.1.64
 // has a swapped-arguments bug in its file:// branch (new Promise((reject, resolve) => ...)),
 // so wasm and WAD would never arrive. Doing it ourselves also gives a progress bar.
 
@@ -374,7 +375,7 @@
             // a missing file and a Chromium without file access look the same from here
             var hint = String(err.message || "").split(":")[0];
             if (window.location.protocol === "file:") {
-                hint += " fehlt, oder Chromium läuft ohne --allow-file-access-from-files (kiosk.sh setzt das).";
+                hint += " fehlt, oder Chromium läuft ohne --allow-file-access-from-files (nur nötig, wenn die Seite per file:// geöffnet wird).";
             }
             fail("Doom konnte nicht geladen werden.", hint);
             console.error("[doom] " + err.message);

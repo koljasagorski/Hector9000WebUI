@@ -30,9 +30,10 @@ New Game → episode 1 → skill 2 ("Hey, not too rough"). A real keyboard works
 
 ## Needs
 
-* Chromium with `--allow-file-access-from-files` when the UI is opened from `file://`
-  (`../kiosk.sh` sets it). Over http no flag is needed. Without it the game shows an error
-  and returns to the drinks after a few seconds.
+* Over http (what `../kiosk.sh` does: `http://127.0.0.1:8765`) no Chromium flag is needed.
+  Only when the page is opened from `file://` (a hand-opened `Main.html`, or the `file://`
+  fallback of `kiosk.sh`) Chromium needs `--allow-file-access-from-files`; without it the game
+  shows an error and returns to the drinks after a few seconds.
 * RAM: the engine reserves 96 MB (grows up to 256 MB) plus the 29 MB game data; the iframe is removed on exit, which frees it again. Not measured on the Pi.
 * Not tested on a real Pi 2/3 (32-bit ARM, Chromium 113): checked in desktop Chrome only,
   also with the CPU throttled to 1/6. Sound is off (`-nosound`); `?sound` switches it on.

@@ -12,9 +12,16 @@
 #   marker      every kiosk Chromium runs with a profile dir containing
 #               "hector9000-kiosk-profile", so `pkill -f` only hits the kiosk.
 #
+# The UI is served to Chromium from a small local web server (a tiny Python http.server wrapper,
+# bound to 127.0.0.1 only, stopped when this script ends). That keeps Chromium's file://
+# restrictions in place: --allow-file-access-from-files would let any script that ever
+# ran in the kiosk read local files. Only if no such server can be started the UI is
+# opened from file:// with that flag, so the kiosk still comes up.
+#
 # Environment overrides:
 #   HECTOR_MQTT_HOST (localhost)  HECTOR_MQTT_WS_PORT (9001)
 #   HECTOR_WAIT_TIMEOUT (120 s)   HECTOR_KIOSK_FLAGS (extra Chromium flags)
+#   HECTOR_UI_PORT (8765, the next free one up to +9 is used)
 #
 # Usage: kiosk.sh          start kiosk
 #        kiosk.sh --exit   leave fullscreen (same as the secret button)
@@ -22,7 +29,10 @@
 set -u
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PAGE="file://${DIR}/Main.html"
+UI_PORT="${HECTOR_UI_PORT:-8765}"
+UI_SERVER_PID=""
+PAGE=""
+EXTRA_FLAGS=""
 EXIT_DIR="/tmp/hector9000-kiosk"
 EXIT_FLAG="${EXIT_DIR}/exit"
 PROFILE_DIR="${HOME}/.cache/hector9000-kiosk-profile"
@@ -38,6 +48,59 @@ if [ "${1:-}" = "--exit" ]; then
     pkill -f "hector9000-kiosk-[p]rofile"
     exit 0
 fi
+
+stop_ui_server() {
+    if [ -n "$UI_SERVER_PID" ]; then
+        kill "$UI_SERVER_PID" 2>/dev/null
+        wait "$UI_SERVER_PID" 2>/dev/null
+        UI_SERVER_PID=""
+    fi
+}
+trap stop_ui_server EXIT
+trap 'exit 143' TERM
+trap 'exit 130' INT
+trap 'exit 129' HUP
+
+# Serve the UI on 127.0.0.1 and set PAGE; returns 1 if that is not possible.
+# The Python wrapper only creates the ready file after it has bound the port itself, so a
+# foreign server that already uses a port is never mistaken for ours.
+start_ui_server() {
+    command -v python3 >/dev/null 2>&1 || return 1
+    local port ready_dir ready tries
+    ready_dir="$(mktemp -d 2>/dev/null)" || return 1
+    ready="${ready_dir}/ready"
+    for port in $(seq "$UI_PORT" $((UI_PORT + 9))); do
+        # 9>&-: the server must not inherit the instance lock
+        python3 - "$port" "$DIR" "$ready" >/dev/null 2>&1 9>&- <<'PY' &
+import functools, http.server, sys
+port, directory, ready = int(sys.argv[1]), sys.argv[2], sys.argv[3]
+
+
+class Quiet(http.server.SimpleHTTPRequestHandler):
+    def log_message(self, *args):
+        pass
+
+
+server = http.server.ThreadingHTTPServer(("127.0.0.1", port), functools.partial(Quiet, directory=directory))
+open(ready, "w").close()
+server.serve_forever()
+PY
+        UI_SERVER_PID=$!
+        tries=0
+        while [ "$tries" -lt 40 ] && kill -0 "$UI_SERVER_PID" 2>/dev/null; do
+            if [ -e "$ready" ]; then
+                rm -rf "$ready_dir"
+                PAGE="http://127.0.0.1:${port}/Main.html"
+                return 0
+            fi
+            sleep 0.25
+            tries=$((tries + 1))
+        done
+        stop_ui_server   # port in use (the wrapper died) or too slow - try the next port
+    done
+    rm -rf "$ready_dir"
+    return 1
+}
 
 BROWSER=""
 for candidate in chromium-browser chromium google-chrome; do
@@ -80,6 +143,15 @@ until (exec 3<>"/dev/tcp/${MQTT_HOST}/${MQTT_WS_PORT}") 2>/dev/null; do
     waited=$((waited + 2))
 done
 
+# --- local web server for the UI (file:// fallback) -------------------------
+if start_ui_server; then
+    log "serving the UI at ${PAGE}"
+else
+    PAGE="file://${DIR}/Main.html"
+    EXTRA_FLAGS="--allow-file-access-from-files"
+    log "WARNING: no local web server, opening ${PAGE} with ${EXTRA_FLAGS} (less safe)"
+fi
+
 # --- start fullscreen, restart on crash, stop on exit flag -----------------
 mkdir -p "$PROFILE_DIR"
 while [ ! -e "$EXIT_FLAG" ]; do
@@ -107,10 +179,12 @@ while [ ! -e "$EXIT_FLAG" ]; do
         --disable-pinch \
         --check-for-update-interval=31536000 \
         --password-store=basic \
-        --allow-file-access-from-files \
         --ozone-platform-hint=auto \
+        ${EXTRA_FLAGS} \
         ${HECTOR_KIOSK_FLAGS:-} \
-        "$PAGE" 9>&-   # browser must not inherit the instance lock
+        "$PAGE" 9>&- &   # browser must not inherit the instance lock
+    # wait (not a foreground run): a TERM/INT/HUP to this script must stop the web server at once
+    wait $!
 
     [ -e "$EXIT_FLAG" ] && break
     log "browser ended unexpectedly, restarting in 3s"
