@@ -678,6 +678,22 @@ h1, #h9, .name, .DM_button, .CM_button, #DM_name, #loading-text, #toast {
     background: transparent;
 }
 
+/* ---------- Doom easter egg: game page in an iframe over the whole UI ---------- */
+#doom-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 5000; /* above the secret exit zone: the game has its own way back */
+    background: #000;
+}
+
+#doom-frame {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: #000;
+}
+
 /* ---------- spinner ---------- */
 .lds-roller {
     display: inline-block;

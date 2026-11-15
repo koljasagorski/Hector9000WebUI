@@ -1,0 +1,236 @@
+/* Doom easter egg page - lives in an iframe on top of Main.html (800x480 touch kiosk).
+   All sizes scale with the window height: --u is "one pixel at 480 px height". */
+
+@font-face {
+    font-family: "Jersey 10";
+    src: url("../fonts/congress/jersey-10-latin-400-normal.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "Hack";
+    src: url("../fonts/congress/Hack-Bold.woff2") format("woff2");
+    font-weight: 700;
+    font-style: normal;
+}
+
+:root {
+    --u: calc(100vh / 480);
+}
+
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
+    color: #fff;
+    font-family: "Hack", monospace;
+    font-weight: 700;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: none;
+    overscroll-behavior: none;
+}
+
+#stage {
+    position: fixed;
+    inset: 0;
+    background: #000;
+}
+
+/* the canvas must not have a border or padding; the mouse is disabled anyway.
+   pointer-events: none keeps touches away from the engine - only the buttons steer. */
+#canvas {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    height: 100%;
+    aspect-ratio: 4 / 3;
+    transform: translateX(-50%);
+    background: #000;
+    image-rendering: pixelated;
+    pointer-events: none;
+    outline: none;
+}
+
+/* ---------- loading / error ---------- */
+#loading {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #120606;
+}
+
+#loading.gone {
+    display: none;
+}
+
+#loading-box {
+    width: calc(var(--u) * 520);
+    text-align: center;
+}
+
+#loading-title {
+    font-family: "Jersey 10", monospace;
+    font-weight: 400;
+    font-size: calc(var(--u) * 150);
+    line-height: 1;
+    letter-spacing: 0.04em;
+    color: #d8321e;
+    text-shadow: 0 calc(var(--u) * 6) 0 #5a0d06;
+}
+
+#loading-text {
+    margin-top: calc(var(--u) * 14);
+    font-size: calc(var(--u) * 24);
+}
+
+#loading-bar {
+    margin: calc(var(--u) * 16) auto 0;
+    height: calc(var(--u) * 22);
+    border: calc(var(--u) * 3) solid #d8321e;
+    padding: calc(var(--u) * 2);
+}
+
+#loading-fill {
+    height: 100%;
+    width: 0;
+    background: #d8321e;
+}
+
+#loading-hint {
+    margin-top: calc(var(--u) * 16);
+    min-height: calc(var(--u) * 44);
+    font-size: calc(var(--u) * 16);
+    line-height: 1.35;
+    color: #c9a9a4;
+}
+
+#loading.failed #loading-title {
+    color: #777;
+    text-shadow: none;
+}
+
+/* ---------- touch controls ---------- */
+#pad[hidden] {
+    display: none;
+}
+
+.btn {
+    position: absolute;
+    z-index: 10;
+    width: calc(var(--u) * 72);
+    height: calc(var(--u) * 72);
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: calc(var(--u) * 2);
+    border: calc(var(--u) * 3) solid rgba(255, 255, 255, 0.6);
+    border-radius: calc(var(--u) * 12);
+    background: rgba(20, 20, 20, 0.5);
+    color: #fff;
+    font: inherit;
+    font-size: calc(var(--u) * 14);
+    text-transform: uppercase;
+    touch-action: none;
+    outline: none;
+    cursor: pointer;
+}
+
+.btn svg {
+    width: calc(var(--u) * 34);
+    height: calc(var(--u) * 34);
+    fill: currentColor;
+    pointer-events: none;
+}
+
+.btn span {
+    pointer-events: none;
+}
+
+.btn.dir svg {
+    width: calc(var(--u) * 40);
+    height: calc(var(--u) * 40);
+}
+
+.btn.down {
+    background: rgba(255, 255, 255, 0.55);
+    color: #000;
+    border-color: #fff;
+}
+
+/* back / menu in the top corners (in the black side bars of the 4:3 picture) */
+#b-back {
+    top: calc(var(--u) * 6);
+    left: calc(var(--u) * 4);
+}
+
+#b-menu {
+    top: calc(var(--u) * 6);
+    right: calc(var(--u) * 4);
+}
+
+/* walking cross, bottom left */
+#b-up {
+    left: calc(var(--u) * 80);
+    bottom: calc(var(--u) * 88);
+}
+
+#b-left {
+    left: calc(var(--u) * 6);
+    bottom: calc(var(--u) * 8);
+}
+
+#b-down {
+    left: calc(var(--u) * 80);
+    bottom: calc(var(--u) * 8);
+}
+
+#b-right {
+    left: calc(var(--u) * 154);
+    bottom: calc(var(--u) * 8);
+}
+
+/* actions, bottom right */
+#b-fire {
+    right: calc(var(--u) * 6);
+    bottom: calc(var(--u) * 8);
+    width: calc(var(--u) * 112);
+    height: calc(var(--u) * 112);
+    border-radius: 50%;
+    border-color: rgba(255, 190, 170, 0.8);
+    background: rgba(200, 30, 20, 0.55);
+    font-size: calc(var(--u) * 20);
+}
+
+#b-fire.down {
+    background: rgba(255, 120, 90, 0.9);
+}
+
+#b-use {
+    right: calc(var(--u) * 128);
+    bottom: calc(var(--u) * 8);
+}
+
+#b-wprev {
+    right: calc(var(--u) * 86);
+    bottom: calc(var(--u) * 136);
+}
+
+#b-wnext {
+    right: calc(var(--u) * 6);
+    bottom: calc(var(--u) * 136);
+}

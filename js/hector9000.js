@@ -232,6 +232,98 @@ function showRebooting() {
     }, 90000);
 }
 
+//--------- Doom easter egg ---------------
+// Picking the cocktail "Doom" (any drink whose name contains "doom") opens doom/index.html -
+// Chocolate Doom as WebAssembly with the free Freedoom levels - in an iframe on top of the UI.
+// The page ends itself (back button, "Quit Game", idle, error) and tells us by postMessage.
+// MQTT and the drink list keep running underneath; removing the iframe frees the game's memory.
+// If the backend has no such drink we add a "Doom" button ourselves (?nodoom switches that off).
+// Needs Chromium with --allow-file-access-from-files when the UI is opened from file:// (kiosk.sh).
+
+const DOOM_URL = "doom/index.html";
+const DOOM_DRINK_ID = "doom";
+const DOOM_ADD_VIRTUAL_DRINK = !new URLSearchParams(window.location.search).has("nodoom");
+const DOOM_BEAT_TIMEOUT_MS = 30000;      // the page sends a heartbeat every 5 s
+const DOOM_MAX_MS = 30 * 60 * 1000;      // nobody plays Doom at the bar for longer than this
+const TopicDoomEvent = "Hector9000/event/doom";
+
+var doomOverlay = null;
+var doomFrame = null;
+var doomStarted = 0;
+var doomLastBeat = 0;
+var doomWatchdog = null;
+
+function isDoomDrink(name) {
+    return /doom/i.test(String(name || ""));
+}
+
+function addDoomDrink(json) {
+    if (!DOOM_ADD_VIRTUAL_DRINK || !json || !Array.isArray(json.drinks)) return;
+    if (json.drinks.some(function (d) { return d && isDoomDrink(d.name); })) return;
+    json.drinks.push({name: "Doom", id: DOOM_DRINK_ID, alcohol: false});
+}
+
+// Only from the drink grid: not while a modal is open or a drink is being made.
+function startDoom() {
+    if (doomOverlay || MM_status !== MM_State.CLOSED || DM_status !== DM_State.CLOSED) return false;
+    doomOverlay = document.createElement("div");
+    doomOverlay.id = "doom-overlay";
+    doomFrame = document.createElement("iframe");
+    doomFrame.id = "doom-frame";
+    doomFrame.setAttribute("title", "Doom");
+    doomFrame.setAttribute("allow", "autoplay");
+    doomFrame.src = DOOM_URL;
+    doomOverlay.appendChild(doomFrame);
+    document.body.appendChild(doomOverlay);
+    window.addEventListener("message", onDoomMessage);
+    doomStarted = Date.now();
+    doomLastBeat = doomStarted;
+    doomWatchdog = setInterval(doomWatch, 5000);
+    sendActivity();
+    return true;
+}
+
+function stopDoom(reason, seconds) {
+    if (!doomOverlay) return;
+    window.removeEventListener("message", onDoomMessage);
+    clearInterval(doomWatchdog);
+    doomWatchdog = null;
+    doomFrame.src = "about:blank";   // stops the engine at once
+    doomOverlay.remove();
+    doomOverlay = null;
+    doomFrame = null;
+    let played = (typeof seconds === "number" && seconds >= 0) ? Math.round(seconds) : Math.round((Date.now() - doomStarted) / 1000);
+    if (played > 0) {
+        publish(TopicDoomEvent, JSON.stringify({seconds: played, reason: String(reason || ""), ts: Date.now() / 1000}));
+    }
+    publish(TopicLED + "activity", "1");
+    lastActivitySent = Date.now();
+}
+
+function onDoomMessage(e) {
+    // only our own game frame may talk to us
+    if (!doomFrame || e.source !== doomFrame.contentWindow) return;
+    let msg = e.data;
+    if (!msg || msg.source !== "hector-doom") return;
+    if (msg.type === "hb") {
+        doomLastBeat = Date.now();
+    } else if (msg.type === "activity") {
+        doomLastBeat = Date.now();
+        sendActivity();
+    } else if (msg.type === "exit") {
+        stopDoom(msg.reason, msg.seconds);
+    }
+}
+
+function doomWatch() {
+    let now = Date.now();
+    if (now - doomLastBeat > DOOM_BEAT_TIMEOUT_MS) {
+        stopDoom("hung");
+    } else if (now - doomStarted > DOOM_MAX_MS) {
+        stopDoom("max");
+    }
+}
+
 //--------- Secret fullscreen exit ---------------
 // Tap the invisible zone in the top left corner 5 times within 3 seconds.
 // A kiosk browser cannot leave fullscreen from JS, so the backend stops it.
@@ -275,6 +367,7 @@ function generateButton(name, id, alc) {
 function generateButtons(drinksjson) {
 started = true;
     var json = JSON.parse(drinksjson);
+    addDoomDrink(json);
     jl = json.drinks.length;
     cont = document.getElementById("content");
     count = 0;
@@ -400,6 +493,10 @@ function closeDrinkModal() {
 
 function openDrinkModal(drinkinfo) {
     if (MM_status === MM_State.CLOSED) {
+        if (isDoomDrink(drinkinfo.getAttribute("d_name"))) {
+            startDoom();   // the cocktail "Doom" is not poured - it starts the game
+            return;
+        }
         openModal();
         DM_status = DM_State.OPENING;
         setTimeout(function () {
@@ -557,6 +654,7 @@ function doseEnded() {
 //Keyevents
 
 function keydown(e) {
+    if (doomOverlay) return;   // arrow keys belong to the game
     if (e.code === "ArrowRight" || e.code === "KeyD") {
         right();
     } else if (e.code === "ArrowLeft" || e.code === "KeyA") {

@@ -27,6 +27,13 @@ The UI publishes the selected theme and LED mode (retained), touches (to end the
 idle animation) and the selected drink; the LED server of the Hector9000 backend
 does the rest (dosing progress, finish, cleaning).
 
+#### Doom easter egg
+
+Picking the cocktail **Doom** starts Doom (Chocolate Doom as WebAssembly, free Freedoom
+levels) on the touch screen; see [`doom/README.md`](doom/README.md) for controls, ways out,
+licences (GPL-2.0 engine, BSD Freedoom data) and how the engine was built. The kiosk
+Chromium needs `--allow-file-access-from-files` (set by `kiosk.sh`).
+
 #### Fullscreen on boot
 
     ./install.sh        # as the desktop user, not root
@@ -40,7 +47,9 @@ unit is removed by `install.sh`.
 
 Start manually: `./kiosk.sh &` (or `./start.sh`).
 Overrides: `HECTOR_MQTT_HOST`, `HECTOR_MQTT_WS_PORT`, `HECTOR_WAIT_TIMEOUT`,
-`HECTOR_KIOSK_FLAGS` (e.g. `--disable-gpu`).
+`HECTOR_KIOSK_FLAGS` (e.g. `--disable-gpu`). The Chromium flags include
+`--allow-file-access-from-files` (the UI runs from `file://` and the Doom page loads its
+files from there).
 
 #### Settings: reboot
 

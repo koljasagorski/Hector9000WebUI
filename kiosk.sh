@@ -107,6 +107,7 @@ while [ ! -e "$EXIT_FLAG" ]; do
         --disable-pinch \
         --check-for-update-interval=31536000 \
         --password-store=basic \
+        --allow-file-access-from-files \
         --ozone-platform-hint=auto \
         ${HECTOR_KIOSK_FLAGS:-} \
         "$PAGE" 9>&-   # browser must not inherit the instance lock
