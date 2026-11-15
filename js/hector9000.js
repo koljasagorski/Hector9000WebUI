@@ -238,7 +238,8 @@ function showRebooting() {
 // The page ends itself (back button, "Quit Game", idle, error) and tells us by postMessage.
 // MQTT and the drink list keep running underneath; removing the iframe frees the game's memory.
 // If the backend has no such drink we add a "Doom" button ourselves (?nodoom switches that off).
-// Needs Chromium with --allow-file-access-from-files when the UI is opened from file:// (kiosk.sh).
+// kiosk.sh serves the UI over http://127.0.0.1, so no special Chromium flag is needed.
+// (Only the file:// fallback of kiosk.sh and a hand-opened Main.html need --allow-file-access-from-files.)
 
 const DOOM_URL = "doom/index.html";
 const DOOM_DRINK_ID = "doom";
@@ -355,12 +356,23 @@ function exitFullscreen() {
 
 //--------- Drink buttons ---------------
 
+// Drink and ingredient names come from the backend database (and thus from
+// whoever can edit it), so they must never be inserted into the page as raw HTML.
+function escapeHtml(value) {
+    return String(value === undefined || value === null ? "" : value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
 function generateButton(name, id, alc) {
     shtml = '<div onclick="openDrinkModal(this)" class="button ';
     if (alc) {
         shtml += 'alc';
     }
-    shtml += '" d_id="' + id + '" d_name="' + name + '"><div class="name">' + name + "</div></div>";
+    shtml += '" d_id="' + escapeHtml(id) + '" d_name="' + escapeHtml(name) + '"><div class="name">' + escapeHtml(name) + "</div></div>";
     return shtml;
 }
 
@@ -502,7 +514,7 @@ function openDrinkModal(drinkinfo) {
         setTimeout(function () {
             document.getElementById("mod-drink").className = "";
         }, 700);
-        let d_name = "<u>" + drinkinfo.getAttribute("d_name");
+        let d_name = "<u>" + escapeHtml(drinkinfo.getAttribute("d_name"));
         if (drinkinfo.className.includes("alc")) {
             d_name += "  (alc) ";
         }
@@ -536,7 +548,7 @@ console.log(document.getElementById("mod-drink"));
             doseDrink(drinkinfo.id);
         };
         for (let i = 0; i < drinkinfo.ingredients.length; i++) {
-            document.getElementById("DM_List").innerHTML += '<div class="DM_ing"><div class="DM_ing_amm">' + drinkinfo.ingredients[i].ammount + 'ml</div><div class="DM_ing_name">' + drinkinfo.ingredients[i].name + '</div></div>';
+            document.getElementById("DM_List").innerHTML += '<div class="DM_ing"><div class="DM_ing_amm">' + escapeHtml(drinkinfo.ingredients[i].ammount) + 'ml</div><div class="DM_ing_name">' + escapeHtml(drinkinfo.ingredients[i].name) + '</div></div>';
         }
         DM_status = DM_State.RUNNING;
     }
