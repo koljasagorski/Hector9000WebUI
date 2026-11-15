@@ -291,3 +291,7 @@ dmypy.json
 \.idea/
 font/Data70.ttf
 .vscode/
+
+# Doom easter egg: the page and the engine build files are sources, not build output
+!doom/index.html
+!doom/build/

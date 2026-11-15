@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <title>Doom</title>
+    <link rel="stylesheet" href="doom.css">
+</head>
+<body>
+<div id="stage">
+    <canvas id="canvas" width="640" height="480" tabindex="-1"></canvas>
+
+    <!-- loading / error screen -->
+    <div id="loading">
+        <div id="loading-box">
+            <div id="loading-title">DOOM</div>
+            <div id="loading-text">Lade …</div>
+            <div id="loading-bar"><div id="loading-fill"></div></div>
+            <div id="loading-hint"></div>
+        </div>
+    </div>
+
+    <!-- touch controls; data-keys = KeyboardEvent.code values, tap = short press -->
+    <div id="pad" hidden>
+        <button class="btn" id="b-back" data-action="back" aria-label="Zurück zu den Drinks">
+            <svg viewBox="0 0 24 24"><polygon points="15,4 6,12 15,20"/></svg><span>Drinks</span>
+        </button>
+        <button class="btn" id="b-menu" data-keys="Escape" aria-label="Menü">
+            <svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="3"/><rect x="4" y="11" width="16" height="3"/><rect x="4" y="16" width="16" height="3"/></svg><span>Menü</span>
+        </button>
+
+        <button class="btn dir" id="b-up" data-keys="ArrowUp" aria-label="Vorwärts"><svg viewBox="0 0 24 24"><polygon points="12,4 21,17 3,17"/></svg></button>
+        <button class="btn dir" id="b-left" data-keys="ArrowLeft" aria-label="Links drehen"><svg viewBox="0 0 24 24"><polygon points="4,12 17,3 17,21"/></svg></button>
+        <button class="btn dir" id="b-right" data-keys="ArrowRight" aria-label="Rechts drehen"><svg viewBox="0 0 24 24"><polygon points="20,12 7,3 7,21"/></svg></button>
+        <button class="btn dir" id="b-down" data-keys="ArrowDown" aria-label="Rückwärts"><svg viewBox="0 0 24 24"><polygon points="12,20 21,7 3,7"/></svg></button>
+
+        <button class="btn fire" id="b-fire" data-keys="ControlLeft" aria-label="Feuer"><span>Feuer</span></button>
+        <!-- "use" also answers menu entries and Y/N questions: Space, Enter, Y -->
+        <button class="btn use" id="b-use" data-keys="Space,Enter,KeyY" aria-label="Benutzen / Bestätigen"><span>Los</span></button>
+        <button class="btn wpn" id="b-wprev" data-keys="BracketLeft" aria-label="Vorherige Waffe"><svg viewBox="0 0 24 24"><polygon points="15,4 6,12 15,20"/></svg><span>Waffe</span></button>
+        <button class="btn wpn" id="b-wnext" data-keys="BracketRight" aria-label="Nächste Waffe"><svg viewBox="0 0 24 24"><polygon points="9,4 18,12 9,20"/></svg><span>Waffe</span></button>
+    </div>
+</div>
+<script src="doom.js"></script>
+</body>
+</html>
