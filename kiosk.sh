@@ -22,6 +22,7 @@
 #   HECTOR_MQTT_HOST (localhost)  HECTOR_MQTT_WS_PORT (9001)
 #   HECTOR_WAIT_TIMEOUT (120 s)   HECTOR_KIOSK_FLAGS (extra Chromium flags)
 #   HECTOR_UI_PORT (8765, the next free one up to +9 is used)
+#   HECTOR_ROTATE (0)             180 = display mounted upside down (the page turns itself, ?rotate=180)
 #
 # Usage: kiosk.sh          start kiosk
 #        kiosk.sh --exit   leave fullscreen (same as the secret button)
@@ -158,6 +159,13 @@ else
     EXTRA_FLAGS="--allow-file-access-from-files"
     log "WARNING: no local web server, opening ${PAGE} with ${EXTRA_FLAGS} (less safe)"
 fi
+
+# display mounted upside down: the page turns itself (css/congress.css, html.rot180)
+case "${HECTOR_ROTATE:-0}" in
+    180) PAGE="${PAGE}?rotate=180" ;;
+    0|"") ;;
+    *) log "HECTOR_ROTATE=${HECTOR_ROTATE} is not supported (0 or 180), ignored" ;;
+esac
 
 # --- start fullscreen, restart on crash, stop on exit flag -----------------
 mkdir -p "$PROFILE_DIR"

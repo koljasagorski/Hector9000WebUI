@@ -5,6 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Hector9000</title>
+    <script>
+        // Display mounted upside down: kiosk.sh adds ?rotate=180 (see HECTOR_ROTATE in kiosk.sh)
+        if (new URLSearchParams(window.location.search).get("rotate") === "180") {
+            document.documentElement.classList.add("rot180");
+        }
+    </script>
     <script src="js/mqtt.js"></script>
     <script src="js/hector9000.js"></script>
     <link href="css/fontawesome/fontawesome.css" rel="stylesheet" type="text/css"/>

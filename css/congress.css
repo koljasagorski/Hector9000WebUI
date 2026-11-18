@@ -678,6 +678,24 @@ h1, #h9, .name, .DM_button, .CM_button, #DM_name, #loading-text, #toast {
     background: transparent;
 }
 
+/* ---------- display mounted upside down (?rotate=180): turn the whole page ----------
+   Hit testing follows the transform, so touches land on what is shown. The secret tap zone stays
+   in the visual top left corner (= bottom right of the unrotated page). */
+html.rot180 body {
+    /* the body needs the size of the window: it is the box that gets turned around its centre */
+    width: 100vw;
+    height: 100vh;
+    transform: rotate(180deg);
+    transform-origin: 50% 50%;
+}
+
+html.rot180 #secret-exit {
+    top: auto;
+    left: auto;
+    bottom: 0;
+    right: 0;
+}
+
 /* ---------- Doom easter egg: game page in an iframe over the whole UI ---------- */
 #doom-overlay {
     position: fixed;
